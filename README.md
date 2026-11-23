@@ -9,6 +9,7 @@
 
 Ferramentas utilizadas:
 - NMAP;
+- Enum4linux;
 - Medusa;
 - Hydra;
 
@@ -72,5 +73,34 @@ Ferramentas utilizadas:
 - Após alguns ajustes de sintaxe a ajuste no comando correto da ferramenta obtive o resultado do teste sem falsos positivos:
 
 4.5 - Conclusões do teste de invasão de formulários de login web:
-- Ferramenta Medusa possui limitações para esse teste e resulta em falsos positivos, o que é de certa forma pior do que uma mensagem de erro. Você precisa validar se a credencial que ele acusa como correta é correta mesmo o que pode custar seu teste.
+- Ferramenta Medusa possui limitações para esse teste e resulta em falsos positivos, o que é de certa forma pior do que uma mensagem de erro. Você precisa validar se a credencial que ele acusa como correta é correta mesmo, o que pode comprometer seu teste.
 - Ferramenta Hydra foi efetiva, porém tive dificuldade inicial com sua sintaxe. Parece uma ferramenta mais adequada para o Brute Force em serviços HTTP.
+
+ ### Ataque em Cadeia de Usuários de Servidor Simulado com Password Spraying
+
+5.1 - Enumeração de Usuários com Enum4linux:
+- Enumeração SMB (Server Message Block)
+  - Protocolo da Microsoft para compartilhar arquivos, pastas, autenticação de pessoas e comunicação de máquinas windows e linux via Samba
+  - Porta de Entrada para compartilhar recursos em redes internas
+- Comando para enumeração de usuários com enum4linux: ```enum4linux -a 192.168.56.101 | tee enum4_output.txt```
+  - Nesse comando acima o enum4linux vai enumerar diversas informações do sistema, entre elas a lista de usuários do servidor simulado; O comando vai armazenar o resultado da enumeração no arquivo "enum4_output.txt";
+- Ao consultar o arquivo txt, conferimos a lista de usuários acomapnhada de seus códigos RID, relativo ao sistema remoto;
+  - Nomes de usuários genéricos são bons candidatos para ataque de password spraying;
+ 
+5.2 - Ataque de Password Spraying Utilizando o Medusa:
+- O spraying é uma técnica furtiva de ataque a senhas;
+- Vai testar poucas senhas mas em muitos usuários diferentes;
+- Primeiro são criados as wordlists;
+- Em seguida para o password spraying pela Medusa utilizei o seguinte comando:
+  ```medusa -h 192.168.56.101 -U smb_users.txt -P senhas_spray.txt -M smbnt -t 2 -T 50```
+  - Após o -h segue o ip do nosso alvo, após -U e -P são as wordlists, -M é o módulo atacado (smb), -t 2 indica duas threads simultâneas, -T até 50 usuários com testes de credenciais
+  - O spraying vai testar combinações de credenciais por usuários, fazendo checagens e acusando alguma "Account Found"
+ 
+5.3 - Validando o acesso obtido com o Password Spraying:
+- Executar o comando:
+  ```smbclient -L //192.168.56.101 -U msfadmin```
+  - Inserir as credenciais obtidas no terminal, validando o acesso
+
+ 5.4 - Conclusões do teste:
+ - Muito eficaz para sistemas com login sem multifator e usuários genéricos;
+ - Parece eficaz principalmente para credenciais com senhas fracas e usuários inativos dentro de um servidor;
